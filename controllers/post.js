@@ -3,6 +3,7 @@ const cloudinary = require('cloudinary').v2;
 const Comment = require('../models/commenntSchema');
 const Like = require('../models/likeSchema');
 
+
 exports.createPost = async (req, res) => {
     try {
         const { title, content } = req.body;
@@ -95,3 +96,69 @@ exports.deletePost = async (req, res) => {
             })
     }
 }
+
+exports.getAllPost=async(req,res)=>{
+    try{
+        const allPost=await Post.find({}).populate('user').exec();
+        res
+        .status(200)
+        .json({
+            success: true,
+            message: 'All Posts Send',
+            response: allPost
+        })
+    }
+    catch(error){
+        res
+        .status(500)
+        .json({
+            success: false,
+            message: 'Internal Server Error'
+        })
+    }
+}
+
+exports.getUserPosts=async(req,res)=>{
+    try{
+        const {userId}=req.params;
+        const posts=await Post.find({user:userId}).populate('user');
+        res
+        .status(200)
+        .json({
+            success: true,
+            message: 'All Posts Send',
+            response: posts
+        })
+    }
+    catch(error){
+        res
+        .status(500)
+        .json({
+            success: false,
+            message: 'Internal Server Error'
+        })
+    }
+}
+
+exports.getPost=async(req,res)=>{
+    try{
+        const {postId}=req.params;
+        const post=await Post.findOne({_id: postId}).populate('user').populate('likes').populate('comments').exec();
+        res
+        .status(200)
+        .json({
+            success: true,
+            message: 'Post Found',
+            response: post
+        })
+    }
+    catch(error){
+        res
+        .status(500)
+        .json({
+            success: false,
+            message: 'Internal Server Error'
+        })
+    }
+}
+

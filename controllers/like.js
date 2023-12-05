@@ -40,7 +40,7 @@ exports.likePost=async(req,res)=>{
 exports.unlikePost=async(req,res)=>{
     try{
         const {post,user}=req.body;
-        const checkLike=await Like.findOne({post,user});
+        const checkLike=await Like.findOne({_id:user});
         if(!checkLike){
             res
             .status(400)
@@ -49,8 +49,8 @@ exports.unlikePost=async(req,res)=>{
                 message: 'Post Already Unliked'
             })
         }
-        const removeLike=await Like.deleteOne({post,user});
-        const removeLikeFromPost=await Post.updateOne({post},{$pull: { likes: checkLike._id}},{new: true});
+        const removeLike=await Like.deleteOne({_id:user});
+        const removeLikeFromPost=await Post.updateOne({_id:post},{$pull: { likes: checkLike._id}},{new: true});
         res
         .status(200)
         .json({
