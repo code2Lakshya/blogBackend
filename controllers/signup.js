@@ -5,7 +5,6 @@ const cloudinary = require('cloudinary').v2;
 exports.signup = async (req, res) => {
     try {
         const userImage = req.files.img;
-        console.log(userImage)
         const { email, password, username } = req.body;
         if(!userImage.name.includes('jpeg') && !userImage.name.includes('jpg') && !userImage.name.includes('png')){
             res
