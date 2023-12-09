@@ -162,3 +162,27 @@ exports.getPost=async(req,res)=>{
     }
 }
 
+exports.getRandomPost=async(req,res)=>{
+    try{
+        const posts=await Post.find()
+        .populate('likes')
+        .populate('comments')
+        .exec();
+        const randomPost=posts[Math.floor((post.length -1)*Math.random())];
+        res
+        .status(200)
+        .json({
+            success: true,
+            response: randomPost,
+            message: 'Random Post Sent'
+        })
+    }
+    catch(error){
+        res
+        .status(500)
+        .json({
+            success: false,
+            message: "Internal Server Error"
+        })
+    }
+}
