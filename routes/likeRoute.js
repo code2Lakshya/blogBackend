@@ -6,6 +6,6 @@ const {likePost,unlikePost}=require('../controllers/like');
 const {auth}=require('../middlewares/auth');
 
 router.post('/likepost',auth,likePost);
-router.delete('/unlikepost',auth,unlikePost);
+router.delete('/unlikepost/:postId',auth,unlikePost);
 
 module.exports=router;

@@ -78,6 +78,7 @@ exports.deleteComment=async(req,res)=>{
 exports.editComment=async(req,res)=>{
     try{
         const {comment,content}=req.body;
+        const user=req.userId;
         if(!comment){
             req
             .status(400)
@@ -86,7 +87,7 @@ exports.editComment=async(req,res)=>{
                 message: 'Content invalid'
             })
         }
-        const validateComment=await Comment.findOne({_id: comment});
+        const validateComment=await Comment.findOne({_id: comment,user});
         if(!validateComment){
             res
             .status(400)
@@ -95,7 +96,7 @@ exports.editComment=async(req,res)=>{
                 message: 'Invalid Comment Id'
             })
         }
-        const updatedComment=await Comment.updateOne({_id:comment},{content});
+        const updatedComment=await Comment.findOneAndUpdate({_id:comment},{content},{new: true});
         res
         .status(200)
         .json({

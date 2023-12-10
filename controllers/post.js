@@ -2,13 +2,16 @@ const Post = require('../models/postSchema');
 const cloudinary = require('cloudinary').v2;
 const Comment = require('../models/commenntSchema');
 const Like = require('../models/likeSchema');
+const Category = require('../models/categorySchema');
+const  mongoose=require('mongoose');
 
 
 exports.createPost = async (req, res) => {
     try {
-        const { title, content } = req.body;
+        const { title, content, categories, newCategory } = req.body;
         const postImg = req.files.img;
         const userId = req.userId;
+        const resSend = false;
         if (!title || !content) {
             res
                 .status(406)
@@ -17,24 +20,67 @@ exports.createPost = async (req, res) => {
                     message: 'Missing content or title'
                 })
         }
-        console.log(postImg);
+        if (categories?.length + newCategory?.length > 5 || categories?.length > 5 || newCategory?.length > 5) {
+            console.log(categories?.length + newCategory?.length, categories?.length, newCategory?.length,);
+            res
+                .status(500)
+                .json({
+                    success: false,
+                    message: "Only upto 5 categories allowed"
+                })
+            resSend = true;
+        }
         let uploadImage;
         if (postImg) {
             uploadImage = await cloudinary.uploader.upload(postImg.tempFilePath, {
                 folder: 'bloggingapp'
             })
         }
-        console.log(uploadImage);
-        const post = await Post.create(uploadImage ?
-            { title, content, user: userId, img_url: uploadImage.secure_url , public_id: uploadImage.public_id} :
-            { title, content, user: userId });
-        res
-            .status(200)
-            .json({
-                success: true,
-                message: 'Post Created',
-                response: post
+        let newItem = [];
+        if (newCategory) {
+            for (let item of newCategory) {
+                const createdItem = await Category.create({ category: item.toLowerCase() });
+                newItem.push(createdItem._id);
+            }
+        }
+        let newPost;
+        if (uploadImage) {
+            newPost = await Post.create({
+                title,
+                content,
+                user: userId,
+                img_url: uploadImage.secure_url,
+                public_id: uploadImage.public_id
             })
+        }
+        else {
+            newPost = await Post.create({
+                title,
+                content,
+                user: userId
+            })
+        }
+        if (categories) {
+            for (let item of categories) {
+                const checkCategory = await Category.findOneAndUpdate({ _id: item }, { $push: { posts: newPost._id } }, { new: true });
+                const addToPost = await Post.updateOne({ _id: newPost._id }, { $push: { categories: checkCategory._id } });
+            }
+        }
+        if (newItem.length > 0) {
+            for (let item of newItem) {
+                const checkCategory = await Category.findOneAndUpdate({ _id:item }, { $push: { posts: newPost._id } }, { new: true });
+                const addToPost = await Post.updateOne({ _id: newPost._id }, { $push: { categories: checkCategory._id } }, { new: true });
+            }
+        }
+        newPost = await Post.findOne({ _id: newPost._id }).populate('categories').exec();
+        if (!resSend)
+            res
+                .status(200)
+                .json({
+                    success: true,
+                    message: 'Post Created',
+                    response: newPost
+                })
     }
     catch (error) {
         res
@@ -78,7 +124,9 @@ exports.deletePost = async (req, res) => {
         }
         const deleteComments = await Comment.deleteMany({ post });
         const deleteLikes = await Like.deleteMany({ post });
-
+        checkPost.categories.forEach(async (item) => {
+            const deleteCategory = await Category.updateOne({ _id: item }, { $pull: { posts: post } });
+        })
         res
             .status(200)
             .json({
@@ -97,92 +145,93 @@ exports.deletePost = async (req, res) => {
     }
 }
 
-exports.getAllPost=async(req,res)=>{
-    try{
-        const allPost=await Post.find({}).populate('user').exec();
+exports.getAllPost = async (req, res) => {
+    try {
+        const allPost = await Post.find({}).populate('user').exec();
         res
-        .status(200)
-        .json({
-            success: true,
-            message: 'All Posts Send',
-            response: allPost
-        })
+            .status(200)
+            .json({
+                success: true,
+                message: 'All Posts By ',
+                response: allPost
+            })
     }
-    catch(error){
+    catch (error) {
         res
-        .status(500)
-        .json({
-            success: false,
-            message: 'Internal Server Error'
-        })
-    }
-}
-
-exports.getUserPosts=async(req,res)=>{
-    try{
-        const {userId}=req.params;
-        const posts=await Post.find({user:userId}).populate('user');
-        res
-        .status(200)
-        .json({
-            success: true,
-            message: 'All Posts Send',
-            response: posts
-        })
-    }
-    catch(error){
-        res
-        .status(500)
-        .json({
-            success: false,
-            message: 'Internal Server Error'
-        })
+            .status(500)
+            .json({
+                success: false,
+                message: 'Internal Server Error'
+            })
     }
 }
 
-exports.getPost=async(req,res)=>{
-    try{
-        const {postId}=req.params;
-        const post=await Post.findOne({_id: postId}).populate('user').populate('likes').populate('comments').exec();
+exports.getUserPosts = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const posts = await Post.find({ user: userId }).populate('user');
         res
-        .status(200)
-        .json({
-            success: true,
-            message: 'Post Found',
-            response: post
-        })
+            .status(200)
+            .json({
+                success: true,
+                message: 'All Posts Send',
+                response: posts
+            })
     }
-    catch(error){
+    catch (error) {
         res
-        .status(500)
-        .json({
-            success: false,
-            message: 'Internal Server Error'
-        })
+            .status(500)
+            .json({
+                success: false,
+                message: 'Internal Server Error'
+            })
     }
 }
 
-exports.getRandomPost=async(req,res)=>{
-    try{
-        const posts=await Post.find()
-        .populate('likes')
-        .populate('comments')
-        .exec();
-        const randomPost=posts[Math.floor((post.length -1)*Math.random())];
+exports.getPost = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const post = await Post.findOne({ _id: postId }).populate('user').populate('likes').populate('comments').exec();
         res
-        .status(200)
-        .json({
-            success: true,
-            response: randomPost,
-            message: 'Random Post Sent'
-        })
+            .status(200)
+            .json({
+                success: true,
+                message: 'Post Found',
+                response: post
+            })
     }
-    catch(error){
+    catch (error) {
         res
-        .status(500)
-        .json({
-            success: false,
-            message: "Internal Server Error"
-        })
+            .status(500)
+            .json({
+                success: false,
+                message: 'Internal Server Error'
+            })
+    }
+}
+
+exports.getRandomPost = async (req, res) => {
+    try {
+        const posts = await Post.find({})
+            .populate('likes')
+            .populate('comments')
+            .exec();
+        const randomPost = posts[Math.floor((posts.length - 1) * Math.random())];
+        console.log(randomPost);
+        res
+            .status(200)
+            .json({
+                success: true,
+                response: randomPost,
+                message: 'Random Post Sent'
+            })
+    }
+    catch (error) {
+        res
+            .status(500)
+            .json({
+                success: false,
+                message: `Internal Server Error ${error.message}`
+            })
     }
 }

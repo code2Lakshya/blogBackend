@@ -3,7 +3,8 @@ const Post=require('../models/postSchema');
 
 exports.likePost=async(req,res)=>{
     try{
-        const {post,user}=req.body;
+        const {post}=req.body;
+        const user=req.userId;
         const checkPost=await Like.findOne({post,user});
         if(checkPost){
             res
@@ -39,8 +40,9 @@ exports.likePost=async(req,res)=>{
 
 exports.unlikePost=async(req,res)=>{
     try{
-        const {post,user}=req.body;
-        const checkLike=await Like.findOne({_id:user});
+        const {postId}=req.params;
+        const user=req.userId;
+        const checkLike=await Like.findOne({post:postId,user});
         if(!checkLike){
             res
             .status(400)
@@ -49,8 +51,8 @@ exports.unlikePost=async(req,res)=>{
                 message: 'Post Already Unliked'
             })
         }
-        const removeLike=await Like.deleteOne({_id:user});
-        const removeLikeFromPost=await Post.updateOne({_id:post},{$pull: { likes: checkLike._id}},{new: true});
+        const removeLike=await Like.deleteOne({_id: checkLike._id});
+        const removeLikeFromPost=await Post.updateOne({_id:postId},{$pull: { likes: checkLike._id}},{new: true});
         res
         .status(200)
         .json({

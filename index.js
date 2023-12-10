@@ -18,7 +18,7 @@ app.use(fileUpload({
 
 app.use(express.urlencoded({ extended: true }));
 
-const cookieParser=require('cookie-parser');
+const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
 app.listen(process.env.PORT, () => {
@@ -36,6 +36,8 @@ const { cloudinaryConnect } = require('./config/cloudinaryConnect');
 cloudinaryConnect();
 
 const authRouter = require('./routes/authRoute');
-const postRouter=require('./routes/postRoute');
-const likeRouter=require('./routes/likeRoute');
-app.use('/api/v1',authRouter,postRouter,likeRouter);
+const postRouter = require('./routes/postRoute');
+const likeRouter = require('./routes/likeRoute');
+const categoryRouter = require('./routes/categoryRoute');
+const commentRouter = require('./routes/commentRoute');
+app.use('/api/v1', authRouter, postRouter, likeRouter, categoryRouter, commentRouter);
