@@ -3,7 +3,7 @@ const cloudinary = require('cloudinary').v2;
 const Comment = require('../models/commenntSchema');
 const Like = require('../models/likeSchema');
 const Category = require('../models/categorySchema');
-const  mongoose=require('mongoose');
+const mongoose = require('mongoose');
 
 
 exports.createPost = async (req, res) => {
@@ -11,7 +11,7 @@ exports.createPost = async (req, res) => {
         const { title, content, categories, newCategory } = req.body;
         const postImg = req.files.img;
         const userId = req.userId;
-        const resSend = false;
+        let resSend = false;
         if (!title || !content) {
             res
                 .status(406)
@@ -19,6 +19,7 @@ exports.createPost = async (req, res) => {
                     success: false,
                     message: 'Missing content or title'
                 })
+            resSend = true;
         }
         if (categories?.length + newCategory?.length > 5 || categories?.length > 5 || newCategory?.length > 5) {
             console.log(categories?.length + newCategory?.length, categories?.length, newCategory?.length,);
@@ -39,48 +40,60 @@ exports.createPost = async (req, res) => {
         let newItem = [];
         if (newCategory) {
             for (let item of newCategory) {
+                const checkItem = await Category.findOne({ category: item.toLowerCase() });
+                if (!checkItem && !resSend) {
+                    res
+                        .status(400)
+                        .json({
+                            success: false,
+                            message: 'Category Already Exists'
+                        })
+                    resSend = true;
+                }
                 const createdItem = await Category.create({ category: item.toLowerCase() });
                 newItem.push(createdItem._id);
             }
         }
-        let newPost;
-        if (uploadImage) {
-            newPost = await Post.create({
-                title,
-                content,
-                user: userId,
-                img_url: uploadImage.secure_url,
-                public_id: uploadImage.public_id
-            })
-        }
-        else {
-            newPost = await Post.create({
-                title,
-                content,
-                user: userId
-            })
-        }
-        if (categories) {
-            for (let item of categories) {
-                const checkCategory = await Category.findOneAndUpdate({ _id: item }, { $push: { posts: newPost._id } }, { new: true });
-                const addToPost = await Post.updateOne({ _id: newPost._id }, { $push: { categories: checkCategory._id } });
-            }
-        }
-        if (newItem.length > 0) {
-            for (let item of newItem) {
-                const checkCategory = await Category.findOneAndUpdate({ _id:item }, { $push: { posts: newPost._id } }, { new: true });
-                const addToPost = await Post.updateOne({ _id: newPost._id }, { $push: { categories: checkCategory._id } }, { new: true });
-            }
-        }
-        newPost = await Post.findOne({ _id: newPost._id }).populate('categories').exec();
-        if (!resSend)
-            res
-                .status(200)
-                .json({
-                    success: true,
-                    message: 'Post Created',
-                    response: newPost
+        if (!resSend) {
+            let newPost;
+            if (uploadImage) {
+                newPost = await Post.create({
+                    title,
+                    content,
+                    user: userId,
+                    img_url: uploadImage.secure_url,
+                    public_id: uploadImage.public_id
                 })
+            }
+            else {
+                newPost = await Post.create({
+                    title,
+                    content,
+                    user: userId
+                })
+            }
+            if (categories) {
+                for (let item of categories) {
+                    const checkCategory = await Category.findOneAndUpdate({ _id: item }, { $push: { posts: newPost._id } }, { new: true });
+                    const addToPost = await Post.updateOne({ _id: newPost._id }, { $push: { categories: checkCategory._id } });
+                }
+            }
+            if (newItem.length > 0) {
+                for (let item of newItem) {
+                    const checkCategory = await Category.findOneAndUpdate({ _id: item }, { $push: { posts: newPost._id } }, { new: true });
+                    const addToPost = await Post.updateOne({ _id: newPost._id }, { $push: { categories: checkCategory._id } }, { new: true });
+                }
+            }
+            newPost = await Post.findOne({ _id: newPost._id }).populate('categories').exec();
+            if (!resSend)
+                res
+                    .status(200)
+                    .json({
+                        success: true,
+                        message: 'Post Created',
+                        response: newPost
+                    })
+        }
     }
     catch (error) {
         res
