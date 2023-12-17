@@ -41,7 +41,7 @@ exports.createPost = async (req, res) => {
         if (newCategory) {
             for (let item of newCategory) {
                 const checkItem = await Category.findOne({ category: item.toLowerCase() });
-                if (!checkItem && !resSend) {
+                if (checkItem && !resSend) {
                     res
                         .status(400)
                         .json({
@@ -160,12 +160,12 @@ exports.deletePost = async (req, res) => {
 
 exports.getAllPost = async (req, res) => {
     try {
-        const allPost = await Post.find({}).populate('user').exec();
+        const allPost = await Post.find({}).populate('user').populate('categories').exec();
         res
             .status(200)
             .json({
                 success: true,
-                message: 'All Posts By ',
+                message: 'All Posts Sent',
                 response: allPost
             })
     }
@@ -228,9 +228,10 @@ exports.getRandomPost = async (req, res) => {
         const posts = await Post.find({})
             .populate('likes')
             .populate('comments')
+            .populate('categories')
+            .populate('user')
             .exec();
         const randomPost = posts[Math.floor((posts.length - 1) * Math.random())];
-        console.log(randomPost);
         res
             .status(200)
             .json({
@@ -245,6 +246,50 @@ exports.getRandomPost = async (req, res) => {
             .json({
                 success: false,
                 message: `Internal Server Error ${error.message}`
+            })
+    }
+}
+
+exports.getFixedPost = async (req, res) => {
+    try {
+        let { page, limit, skip } = req.query;
+        if (!page) page = 1;
+        if (!limit) limit = 10;
+        const totalPosts = await Post.countDocuments({});
+        if ((page - 1) * limit >= totalPosts) {
+            res
+                .status(400)
+                .json({
+                    success: false,
+                    message: 'You Have Reached The End'
+                })
+        }
+        else {
+            const posts = await Post.find({})
+                .skip(((page - 1) * limit) + (skip ? Number(skip) : 0))
+                .limit(limit)
+                .populate('user')
+                .populate('categories')
+                .exec();
+            res
+                .status(200)
+                .json({
+                    success: true,
+                    response: {
+                        page,
+                        limit,
+                        totalPage: Math.ceil((totalPosts - (skip ? skip : 0)) / Number(limit)),
+                        posts
+                    }
+                })
+        }
+    }
+    catch (error) {
+        res
+            .status(500)
+            .json({
+                success: false,
+                message: 'Internal Server Error'
             })
     }
 }
