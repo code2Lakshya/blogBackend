@@ -45,7 +45,7 @@ exports.unlikePost=async(req,res)=>{
         const checkLike=await Like.findOne({post:postId,user});
         if(!checkLike){
             res
-            .status(400)
+            .status(400) 
             .json({
                 success: false,
                 message: 'Post Already Unliked'

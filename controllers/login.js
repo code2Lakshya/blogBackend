@@ -14,15 +14,17 @@ exports.login = async (req, res) => {
                     success: false,
                     message: "Invalid Email Id"
                 })
+            return;
         }
         let existingUser = await User.findOne({ email });
-        if (!existingUser) {
+        if (!existingUser ) {
             res
                 .status(400)
                 .json({
                     success: false,
                     message: 'User Dosent exist with email'
                 })
+                return;
         }
         let checkPassword;
         try {
@@ -35,13 +37,23 @@ exports.login = async (req, res) => {
                     success: false,
                     message: "Error Hashing Password"
                 })
+            return;
+        }
+        if (!checkPassword) {
+            res
+                .status(400)
+                .json({
+                    success: false,
+                    message: "Wrong Password"
+                })
+            return;
         }
         existingUser = existingUser.toObject();
         existingUser.password = undefined;
         const token = jwt.sign(existingUser, process.env.SECRET_KEY, {
             expiresIn: '24h'
         });
-        existingUser.token=token;
+        existingUser.token = token;
         res
             .status(200)
             .cookie('token', token, {
