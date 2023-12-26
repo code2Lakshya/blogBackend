@@ -26,6 +26,15 @@ exports.login = async (req, res) => {
                 })
                 return;
         }
+        const checkGoogleUser=await User.findOne({email});
+        if(checkGoogleUser.google_sign_in){
+            res
+            .status(400)
+            .json({
+                success: false,
+                message: 'Use Google Sign In'
+            })
+        }
         let checkPassword;
         try {
             checkPassword = await bcrypt.compare(password, existingUser.password);

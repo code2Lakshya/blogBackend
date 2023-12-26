@@ -40,16 +40,6 @@ exports.signup = async (req, res) => {
                 })
             ressend = true;
         }
-        const existingUserName = await User.findOne({ username });
-        if (existingUserName && !ressend) {
-            res
-                .status(400)
-                .json({
-                    success: false,
-                    message: 'User with same Username exists'
-                })
-            ressend = true;
-        }
         if (!ressend) {
             let hashedPassword;
             try {
