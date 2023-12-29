@@ -4,10 +4,9 @@ require('dotenv').config();
 
 exports.auth = (req, res, next) => {
     try {
-        const { token } = req?.header('Authorization')?.replace('Bearer ', '') || req.cookies;
-        
+        const  token  = req.cookies.token ||req?.header('Authorization')?.replace('Bearer ', '');
         if (!token) {
-            res
+           return res
                 .status(423)
                 .json({
                     success: false,
@@ -19,7 +18,7 @@ exports.auth = (req, res, next) => {
         next();
     }
     catch (error) {
-        res
+       return res
         .status(422)
         .json({
             success: false,

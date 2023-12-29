@@ -5,7 +5,8 @@ require('dotenv').config();
 
 const cors = require('cors');
 app.use(cors({
-    origin: '*'
+    origin: 'http://127.0.0.1:3000/',
+    credentials: true
 }))
 
 app.use(express.json());

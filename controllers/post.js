@@ -3,13 +3,12 @@ const cloudinary = require('cloudinary').v2;
 const Comment = require('../models/commenntSchema');
 const Like = require('../models/likeSchema');
 const Category = require('../models/categorySchema');
-const mongoose = require('mongoose');
 
 
 exports.createPost = async (req, res) => {
     try {
         const { title, content, categories, newCategory } = req.body;
-        const postImg = req.files.img;
+        const postImg = req?.files?.img;
         const userId = req.userId;
         let resSend = false;
         if (!title || !content) {
@@ -204,13 +203,31 @@ exports.getUserPosts = async (req, res) => {
 exports.getPost = async (req, res) => {
     try {
         const { postId } = req.params;
-        const post = await Post.findOne({ _id: postId }).populate('user').populate('likes').populate('comments').exec();
+        const post = await Post.findOne({ _id: postId })
+            .populate('user')
+            .populate('likes')
+            .populate('comments')
+            .populate('categories')
+            .exec();
+        if (!post) {
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message: 'Invalid Post Id'
+                })
+        }
+        const categories = post.categories.map(item => item._id);
+        const similar_posts = await Post.find({
+            categories: { $in: categories },
+            title: { $ne: post.title }
+        }).limit(3).exec();
         res
             .status(200)
             .json({
                 success: true,
                 message: 'Post Found',
-                response: post
+                response: { post, similar_posts }
             })
     }
     catch (error) {
@@ -218,7 +235,7 @@ exports.getPost = async (req, res) => {
             .status(500)
             .json({
                 success: false,
-                message: 'Internal Server Error'
+                message: `Internal Server Error ${error.message}`
             })
     }
 }
