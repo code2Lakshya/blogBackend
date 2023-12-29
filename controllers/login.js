@@ -26,8 +26,7 @@ exports.login = async (req, res) => {
                 })
                 return;
         }
-        const checkGoogleUser=await User.findOne({email});
-        if(checkGoogleUser.google_sign_in){
+        if(existingUser.google_sign_in){
             res
             .status(400)
             .json({

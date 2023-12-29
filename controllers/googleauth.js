@@ -18,14 +18,6 @@ exports.googleSignUp = async (req, res) => {
         if (response.status === 200) {
             const decodeToken = jwt.decode(token, false);
             let checkUser = await User.findOne({ email: decodeToken.email });
-            if (checkUser && !checkUser?.google_sign_in) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message: 'User Signed in Through email pass'
-                    })
-            }
             if (!checkUser) {
                 checkUser = await User.create({
                     email: decodeToken.email,

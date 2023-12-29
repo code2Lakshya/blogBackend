@@ -250,7 +250,7 @@ exports.getRandomPost = async (req, res) => {
     }
 }
 
-exports.getFixedPost = async (req, res) => {
+exports.getPaginatedPost = async (req, res) => {
     try {
         let { page, limit, skip } = req.query;
         if (!page) page = 1;
