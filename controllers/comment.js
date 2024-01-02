@@ -114,3 +114,34 @@ exports.editComment=async(req,res)=>{
         })
     }
 }
+
+exports.getAllComments=async(req,res)=>{
+    try{
+        const {postId}=req.query;
+        const findPost=await Post.findOne({_id:postId}).populate('comments').exec();
+        if(!findPost)
+        {
+            return res
+            .status(400)
+            .json({
+                success: false,
+                message: 'Invalid PostId'
+            })
+        }
+        return res
+        .status(200)
+        .json({
+            success: true,
+            message: 'Comments Found',
+            response: findPost.comments
+        })
+    }
+    catch(error){
+        res
+        .status(500)
+        .json({
+            success: false,
+            message : `Internal Server Error ${error.message}`
+        })
+    }
+}
