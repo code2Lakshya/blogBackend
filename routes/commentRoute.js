@@ -5,7 +5,7 @@ const {createComment,deleteComment,editComment,getAllComments}=require('../contr
 const {auth}=require('../middlewares/auth');
 
 router.post('/createcomment',auth,createComment);
-router.delete('/deletecomment/:comment',auth,deleteComment);
+router.delete('/deletecomment',auth,deleteComment);
 router.put('/editcomment',auth,editComment);
 router.get('/getallcomments',auth,getAllComments);
 

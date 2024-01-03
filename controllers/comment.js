@@ -1,5 +1,6 @@
 const Comment = require('../models/commenntSchema');
 const Post = require('../models/postSchema');
+const mongoose=require('mongoose');
 
 exports.createComment = async (req, res) => {
     try {
@@ -32,7 +33,7 @@ exports.createComment = async (req, res) => {
             .json({
                 success: true,
                 message: 'Comment Added',
-                response: comment
+                response: findComment
             })
     }
     catch (error) {
@@ -47,17 +48,28 @@ exports.createComment = async (req, res) => {
 
 exports.deleteComment = async (req, res) => {
     try {
-        const { comment } = req.params;
-        const validateComment = await Post.findOne({ _id: comment });
+        const { comment } = req.query;
+        const validateComment = await Comment.findOne({ _id: comment });
         if (!validateComment) {
-            res
+           return res
                 .status(400)
                 .json({
                     success: false,
                     message: 'Invalid Comment Id'
                 })
         }
-        const deleteComment = await Comment.deleteOne({ _id: comment });
+        if(!validateComment.user.equals(new mongoose.Types.ObjectId(req.userId))){
+            return res
+            .status(423)
+            .json({
+                success: false,
+                message: 'You Are Not Permitted to Delete this comment'
+            })
+        }
+        const deleteComment = await Comment.findOneAndDelete({ _id: validateComment._id });
+        const deleteCommentFromPost=await Post.findOneAndUpdate(
+            {_id: validateComment.post},
+            {$pull: {comments: comment}});
         res
             .status(200)
             .json({
@@ -71,7 +83,7 @@ exports.deleteComment = async (req, res) => {
             .status(500)
             .json({
                 success: false,
-                message: 'Internal Server Error'
+                message: `Internal Server Error ${error}`
             })
     }
 }
